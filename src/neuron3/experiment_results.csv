@@ -1,9 +1,0 @@
-experiment_id,architecture,activation,optimizer,learning_rate,batch_size,actual_epochs,dropout_rate,batch_norm,regularizer,initializer,patience,train_mae,val_mae,test_mae,n_layers
-0,64-256,elu,adam,0.0001,128,50,0.0,True,l2,GlorotUniform,10,212989.21875,184012.859375,205748.03125,
-2,128-32-64-256-16,tanh,rmsprop,0.1,16,27,0.3,True,l1,RandomNormal,10,96937.0703125,75472.015625,90310.5078125,
-3,256-32,tanh,sgd,0.01,128,6,0.3,True,,GlorotUniform,5,,,,
-4,64,elu,sgd,0.01,32,6,0.2,True,l2,RandomNormal,5,,,,
-5,32,elu,sgd,0.001,32,15,0.1,True,,HeNormal,15,,,,1.0
-6,128,selu,adam,0.0001,32,18,0.1,True,,HeNormal,15,0.0023,0.0018,0.0046,1.0
-8,32-64,relu,adam,0.002,32,17,0.2,False,,HeNormal,12,0.0032,85025.6719,0.0018,2.0
-11,128-16-32,elu,rmsprop,0.0001,32,20,0.3,False,,HeNormal,15,0.0023,0.002,0.0046,3.0
