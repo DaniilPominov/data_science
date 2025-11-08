@@ -10,6 +10,8 @@ venv.bak/
 # Jupyter
 .ipynb_checkpoints/
 *.ipynb_checkpoints/
+*.pkl
+*.keras
 
 # IDE
 .vscode/
