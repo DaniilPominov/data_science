@@ -1,0 +1,445 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "f5f240dd",
+   "metadata": {},
+   "source": [
+    "# Задание\n",
+    "\n",
+    "На основе анонимизированных данных цифрового следа обучающихся в электронном обучающем курсе проверить гипотезу о наличии связи между активными действиями в электронном курсе и просмотрами. При наличии связи провести регрессионный анализ и подобрать оптимальный вид и параметры функциональной зависимости между переменными Активные действия и Просмотры. Сделать вывод.\n",
+    "\n",
+    "Под **просмотрами** считать следующие названия событий: *['Модуль курса просмотрен', 'HotPot attempt reviewed', 'Страница вики просмотрена', 'Показана карта страниц Вики', 'Версия страницы вики просмотрена', 'Комментарии просмотрены',\n",
+    "'Запись просмотрена', 'Отзыв просмотрен', 'Страница состояния представленного ответа просмотрена', 'Глава просмотрена',\n",
+    "'Содержимое страницы просмотрено', 'Вопрос просмотрен', 'Ответ на задание типа «Эссе» просмотрен', 'Отчет просмотрен',\n",
+    "'Работа просмотрена', 'Попытка теста просмотрена', 'Завершенная попытка теста просмотрена', 'Сводка попытки теста просмотрена', 'Тема просмотрена', 'Отчет по пользователю просмотрен', 'Сессии просмотрены']*\n",
+    "\n",
+    "Под **активными действиями** считать следующие названия событий: *['Ответ на анкету отправлен', 'Запись создана', 'Запись обновлена', 'Комментарий создан', 'Страница вики создана', 'Страница вики обновлена', 'Комментарий создан', 'Категория создана', 'Категория обновлена', 'Комментарий создан', 'Запись создана', 'Запись обновлена', 'Работа представлена.', 'Представленный ответ обновлен.', 'Комментарий создан', 'Дан ответ на вопрос', 'Лекция закончена', 'Ответ представлен', 'Ответ на опрос добавлен', 'Sco запущен', 'Посещаемость отмечена студентом', 'Работа оценена', 'Работа переоценена', 'Представление работы создано', 'Работа была загружена', 'Работа обновлена', 'Попытка теста завершена и отправлена на оценку', 'Тема создана', 'Сообщение создано', 'Отправлено сообщение']*\n",
+    "\n",
+    "**Алгоритм действий:**\n",
+    "1. Считать данные.\n",
+    "2. Исключить данные до начала (до 01.09.2023) и после окончания (до 15.01.2024) осеннего семестра.\n",
+    "3. Агрегировать данные для каждого пользователя по количеству активных действий и просмотров в течение осеннего семестра.\n",
+    "4. Проверить гипотезу независимости критерием хи-квадрат Пирсона (учесть замечание по использованию критерия: $\\nu_{ij}>5$).\n",
+    "5. Сделать вывод.\n",
+    "6. При наличии статистически значимой зависимости между количеством активных действий и просмотров, провести регрессионный анализ:\n",
+    "    - вычислить выборочный коэффициент корреляции Пирсона между количеством активных действий и просмотров, проверить его статистическую значимость, сделать вывод о возможности приближения зависимости между количеством активных действий и просмотров линейной функцией;\n",
+    "    - построить линейную регрессию количества активных действий от просмотров, оценить статистическую значимость коэффициентов уравнения линейной регрессии и значимость всего уравнения в целом;\n",
+    "    - проверить выполнение условия адекватности каждой из полученных моделей регрессии (нормальность распределения регрессионных остатков), построив Q-Q график;\n",
+    "    - выбрать еще 2-3 функциональные формы (квадратическая, логарифмическая, экспоненциальная, обратная и т.д.) зависимости количества активных действий от просмотров, оценить коэффициенты для каждого вида зависимости,  проверить выполнение условия адекватности моделей;\n",
+    "    - выбрать оптимальную модель на основании коэффициента детерминации;\n",
+    "    - с помощью оптимальной модели найти прогноз количества активных действий в курсе, произвольным образом задав для него значение просмотров.\n",
+    "7. Сделать выводы."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "7ab777da",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "views = ['Модуль курса просмотрен', 'HotPot attempt reviewed', 'Страница вики просмотрена', 'Показана карта страниц Вики', 'Версия страницы вики просмотрена', 'Комментарии просмотрены',\n",
+    "'Запись просмотрена', 'Отзыв просмотрен', 'Страница состояния представленного ответа просмотрена', 'Глава просмотрена',\n",
+    "'Содержимое страницы просмотрено', 'Вопрос просмотрен', 'Ответ на задание типа «Эссе» просмотрен', 'Отчет просмотрен',\n",
+    "'Работа просмотрена', 'Попытка теста просмотрена', 'Завершенная попытка теста просмотрена', 'Сводка попытки теста просмотрена', 'Тема просмотрена', 'Отчет по пользователю просмотрен', 'Сессии просмотрены']\n",
+    "active = ['Ответ на анкету отправлен', 'Запись создана', 'Запись обновлена', 'Комментарий создан', 'Страница вики создана', 'Страница вики обновлена', 'Комментарий создан', 'Категория создана', 'Категория обновлена', 'Комментарий создан', 'Запись создана', 'Запись обновлена', 'Работа представлена.', 'Представленный ответ обновлен.', 'Комментарий создан', 'Дан ответ на вопрос', 'Лекция закончена', 'Ответ представлен', 'Ответ на опрос добавлен', 'Sco запущен', 'Посещаемость отмечена студентом', 'Работа оценена', 'Работа переоценена', 'Представление работы создано', 'Работа была загружена', 'Работа обновлена', 'Попытка теста завершена и отправлена на оценку', 'Тема создана', 'Сообщение создано', 'Отправлено сообщение']"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c0684248",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "import matplotlib.pyplot as plt\n",
+    "import seaborn as sns\n",
+    "import pingouin as pg\n",
+    "from scipy.stats import chi2_contingency, pearsonr, boxcox\n",
+    "import statsmodels.api as sm"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9a62b9ea",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df = pd.read_csv('df_var_10.csv')\n",
+    "df[\"Время\"] = pd.to_datetime(df[\"Время\"], format=\"%Y-%m-%d %H:%M:%S\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ad7fd821",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# 2. Исключить данные до 01.09.2023 и после 15.01.2024\n",
+    "start_date = pd.to_datetime('2023-09-01')\n",
+    "test_date = pd.to_datetime('2023-08-01')\n",
+    "end_date = pd.to_datetime('2024-07-15')\n",
+    "df_filtered = df[(df['Время'] >= start_date) & (df['Время'] <= end_date)]\n",
+    "print(f'Размер отфильтрованного датасета: {df_filtered.shape}')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "cd3a47b0",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# 3. Агрегировать данные по пользователям\n",
+    "views_count = df_filtered[df_filtered['Название события'].isin(views)].groupby('Полное имя пользователя').size().reset_index(name='Просмотры')\n",
+    "active_count = df_filtered[df_filtered['Название события'].isin(active)].groupby('Полное имя пользователя').size().reset_index(name='Активные действия')\n",
+    "df_agg = pd.merge(views_count, active_count, on='Полное имя пользователя', how='outer').fillna(0)\n",
+    "df_agg['Просмотры'] = df_agg['Просмотры'].astype(int)\n",
+    "df_agg['Активные действия'] = df_agg['Активные действия'].astype(int)\n",
+    "df_agg_original = df_agg.copy()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "4c15ee98-2666-49ba-b416-f2c71b7bff92",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_agg.info"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f71955fe",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "num_dummy = 0 # пользователи, которые не совершили ни одного активного действия\n",
+    "condition_outliers = (df_agg['Активные действия'] <= num_dummy).sum()\n",
+    "df_agg = df_agg[(df_agg['Активные действия'] > num_dummy)].copy()\n",
+    "print(f\"Выбросы по условию: {condition_outliers}\")\n",
+    "Q1_views = df_agg['Просмотры'].quantile(0.25)\n",
+    "Q3_views = df_agg['Просмотры'].quantile(0.75)\n",
+    "IQR_views = Q3_views - Q1_views\n",
+    "lower_bound_views = Q1_views - 1.5 * IQR_views\n",
+    "upper_bound_views = Q3_views + 1.5 * IQR_views\n",
+    "Q1_actions = df_agg['Активные действия'].quantile(0.25)\n",
+    "Q3_actions = df_agg['Активные действия'].quantile(0.75)\n",
+    "IQR_actions = Q3_actions - Q1_actions\n",
+    "lower_bound_actions = Q1_actions - 1.5 * IQR_actions\n",
+    "upper_bound_actions = Q3_actions + 1.5 * IQR_actions\n",
+    "iqr_outliers = ((df_agg['Просмотры'] < lower_bound_views) |\n",
+    "                (df_agg['Просмотры'] > upper_bound_views) |\n",
+    "                (df_agg['Активные действия'] < lower_bound_actions) |\n",
+    "                (df_agg['Активные действия'] > upper_bound_actions)).sum()\n",
+    "\n",
+    "print(f\"Выбросы по IQR: {iqr_outliers}\")\n",
+    "\n",
+    "df_agg = df_agg[\n",
+    "    (df_agg['Просмотры'] >= lower_bound_views) &\n",
+    "    (df_agg['Просмотры'] <= upper_bound_views) &\n",
+    "    (df_agg['Активные действия'] >= lower_bound_actions) &\n",
+    "    (df_agg['Активные действия'] <= upper_bound_actions)\n",
+    "].copy()\n",
+    "\n",
+    "plt.scatter(df_agg['Просмотры'], df_agg['Активные действия'])\n",
+    "plt.xlabel('Просмотры')\n",
+    "plt.ylabel('Активные действия')\n",
+    "plt.title('Зависимость активных действий от просмотров')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "40202d43-58da-4ddd-94bf-614693e534a4",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_agg"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "654565ac",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# 4. Проверить гипотезу независимости критерием хи-квадрат\n",
+    "from scipy.stats import chi2_contingency\n",
+    "\n",
+    "views_edges = [0,100, 150, np.inf] \n",
+    "active_edges = [0,10, np.inf]   \n",
+    "\n",
+    "df_agg['views_bin'] = pd.cut(df_agg['Просмотры'], bins=views_edges)\n",
+    "df_agg['active_bin'] = pd.cut(df_agg['Активные действия'], bins=active_edges)\n",
+    "\n",
+    "contingency = pd.crosstab(df_agg['views_bin'], df_agg['active_bin'])\n",
+    "\n",
+    "if (contingency.values < 5).any():\n",
+    "    print(\"Внимание: есть ячейки с частотой < 5\")\n",
+    "else:\n",
+    "    print(\"Условие выполнено: все ячейки ≥ 5\")\n",
+    "\n",
+    "chi2, p, dof, expected = chi2_contingency(contingency)\n",
+    "print(f'Chi2: {chi2}')\n",
+    "print(f'p-value: {p}')\n",
+    "print(f'DOF: {dof}')\n",
+    "print('Ожидаемые частоты:\\n', expected)\n",
+    "\n",
+    "if p<=0.05:\n",
+    "    print(\"Гипотеза о независимости отверграется\")\n",
+    "else:\n",
+    "    print(\"Гипотеза о независимости не отверграется\")\n",
+    "contingency"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "fffdc3cc",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "corr, p_corr = pearsonr(df_agg['Просмотры'], df_agg['Активные действия'])\n",
+    "print(f'Коэффициент корреляции Пирсона: {corr}')\n",
+    "print(f'p-value: {p_corr}')\n",
+    "\n",
+    "if p_corr < 0.05:\n",
+    "    print('Корреляция статистически значима.')\n",
+    "else:\n",
+    "    print('Корреляция не значима.')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d8c6854b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "y = df_agg['Активные действия'] + 1\n",
+    "y_boxcox, lambda_boxcox = boxcox(y)\n",
+    "print(f'Оптимальное lambda для Box-Cox: {lambda_boxcox}')\n",
+    "\n",
+    "X_lin = sm.add_constant(df_agg['Просмотры'])\n",
+    "model_lin = sm.OLS(y_boxcox, X_lin).fit()\n",
+    "print(model_lin.summary())\n",
+    "\n",
+    "plt.scatter(model_lin.fittedvalues, model_lin.resid)\n",
+    "plt.xlabel('Предсказанные значения')\n",
+    "plt.ylabel('Остатки')\n",
+    "plt.title('График регрессионных остатков')\n",
+    "plt.axhline(0, color='red', linestyle='--')\n",
+    "plt.show()\n",
+    "\n",
+    "pg.qqplot(model_lin.resid)\n",
+    "plt.title('Q-Q plot')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "af6fff37",
+   "metadata": {},
+   "source": [
+    "Prob (F-statistic):           9.44e-50 << 0.05 => модель значима\n",
+    "\n",
+    "Для обои коэффициентов модели p_value<< 0 => коэффициенты значимы"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ae438830",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Квадратичная модель\n",
+    "df_agg['views_sq'] = df_agg['Просмотры'] ** 2\n",
+    "X_quad = sm.add_constant(df_agg[['Просмотры', 'views_sq']])\n",
+    "model_quad = sm.OLS(y_boxcox, X_quad).fit()\n",
+    "print(model_quad.summary())\n",
+    "\n",
+    "# График остатков\n",
+    "plt.scatter(model_quad.fittedvalues, model_quad.resid)\n",
+    "plt.xlabel('Предсказанные значения')\n",
+    "plt.ylabel('Остатки')\n",
+    "plt.title('График регрессионных остатков (квадратичная модель)')\n",
+    "plt.axhline(0, color='red', linestyle='--')\n",
+    "plt.show()\n",
+    "\n",
+    "# Q-Q plot\n",
+    "pg.qqplot(model_quad.resid, dist='norm', confidence=0.95)\n",
+    "plt.title('Q-Q plot для квадратичной модели')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "444239b8",
+   "metadata": {},
+   "source": [
+    "Prob (F-statistic) << 0.05 => модель значима\n",
+    "\n",
+    "Для всех коэффициентов модели p_value<0.05 => коэффициенты значимы"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c02c7794",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Логарифмическая\n",
+    "df_agg['views_log'] = np.log(df_agg['Просмотры'] + 1)\n",
+    "X_log = sm.add_constant(df_agg[['views_log','Просмотры']])\n",
+    "model_log = sm.OLS(y_boxcox, X_log).fit()\n",
+    "print(model_log.summary())\n",
+    "\n",
+    "# График остатков\n",
+    "plt.scatter(model_log.fittedvalues, model_log.resid)\n",
+    "plt.xlabel('Предсказанные значения')\n",
+    "plt.ylabel('Остатки')\n",
+    "plt.title('График регрессионных остатков (логарифмическая модель)')\n",
+    "plt.axhline(0, color='red', linestyle='--')\n",
+    "plt.show()\n",
+    "\n",
+    "# Q-Q plot\n",
+    "pg.qqplot(model_log.resid, dist='norm', confidence=0.95)\n",
+    "plt.title('Q-Q plot для логарифмической модели')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1ae083a4",
+   "metadata": {},
+   "source": [
+    "Prob (F-statistic) << 0.05 => модель значима.\n",
+    "\n",
+    "Для  коэффициентов модели кроме константы p_value<0.05 => коэффициенты значимы.\n",
+    "\n",
+    "Несущественность коэффициента при константе не является критической проблемой и не подрывает общей значимости модели."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "6769fc50",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "models = {\n",
+    "    'Линейная': model_lin,\n",
+    "    'Квадратичная': model_quad,\n",
+    "    'Логарифмическая': model_log\n",
+    "}\n",
+    "best_model_name = max(models, key=lambda name: models[name].rsquared)\n",
+    "best_model = models[best_model_name]\n",
+    "best_model_name"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "fe1809ca-696c-49cf-8efe-8a043dc71099",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from scipy.special import inv_boxcox\n",
+    "prosmotry_input = 10  \n",
+    "\n",
+    "X_new = pd.DataFrame({\n",
+    "    'const': [1],\n",
+    "    'views_sq': [prosmotry_input**2],\n",
+    "    'Просмотры': [prosmotry_input]\n",
+    "})\n",
+    "\n",
+    "# предсказание в преобразованной шкале \n",
+    "y_pred_boxcox = best_model.predict(X_new)[0]\n",
+    "\n",
+    "# Обратное преобразование BoxCox \n",
+    "from scipy.special import inv_boxcox\n",
+    "y_pred = inv_boxcox(y_pred_boxcox, lambda_boxcox) - 1  # вычитаем 1, т.к. мы добавляли 1 ранее\n",
+    "\n",
+    "print(f\"Прогноз количества активных действий при {prosmotry_input} просмотрах: {np.round(y_pred, 2)}\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "8508051e-3e12-4789-bbaa-203ab9787721",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x_vals = df_agg['Просмотры'].values\n",
+    "y_vals = df_agg['Активные действия'].values\n",
+    "\n",
+    "y_orig = inv_boxcox(y_boxcox, lambda_boxcox) - 1\n",
+    "\n",
+    "x_grid = np.linspace(x_vals.min(), x_vals.max(), 300)\n",
+    "\n",
+    "\n",
+    "X_lin_grid = sm.add_constant(x_grid)\n",
+    "y_lin_pred_bc = model_lin.predict(X_lin_grid)\n",
+    "y_lin_pred = inv_boxcox(y_lin_pred_bc, lambda_boxcox) - 1\n",
+    "\n",
+    "\n",
+    "X_quad_grid = sm.add_constant(np.column_stack([x_grid, x_grid**2]))\n",
+    "y_quad_pred_bc = model_quad.predict(X_quad_grid)\n",
+    "y_quad_pred = inv_boxcox(y_quad_pred_bc, lambda_boxcox) - 1\n",
+    "\n",
+    "\n",
+    "X_log_grid = sm.add_constant(np.column_stack([np.log(x_grid + 1), x_grid]))\n",
+    "y_log_pred_bc = model_log.predict(X_log_grid)\n",
+    "y_log_pred = inv_boxcox(y_log_pred_bc, lambda_boxcox) - 1\n",
+    "\n",
+    "\n",
+    "plt.figure(figsize=(10, 6))\n",
+    "plt.scatter(x_vals, y_vals, alpha=0.6, label='Исходные данные', color='gray')\n",
+    "\n",
+    "plt.plot(x_grid, y_lin_pred, label='Линейная модель', color='blue')\n",
+    "plt.plot(x_grid, y_quad_pred, label='Квадратичная модель', color='green')\n",
+    "plt.plot(x_grid, y_log_pred, label='Логарифмическая модель', color='red')\n",
+    "\n",
+    "plt.xlabel('Просмотры')\n",
+    "plt.ylabel('Активные действия')\n",
+    "plt.title('Сравнение регрессионных моделей')\n",
+    "plt.legend()\n",
+    "plt.grid(True, linestyle='--', alpha=0.5)\n",
+    "plt.show()"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.13.8"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
